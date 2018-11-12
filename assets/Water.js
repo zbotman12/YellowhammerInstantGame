@@ -122,8 +122,8 @@ cc.Class({
                     {
                         for(var j = 0; j < verticalRoutes[i].length; j++)
                         {
-                            if( verticalRoutes[i][j].x == currentWaterPosition.x &&
-                                verticalRoutes[i][j].y == currentWaterPosition.y)
+                            if( verticalRoutes[i][0].x == currentWaterPosition.x &&
+                                verticalRoutes[i][0].y == currentWaterPosition.y)
                             {
                                 targetRoute = verticalRoutes[i];
                             //    for(var k = j; k < verticalRoutes[i].length - j; k++)
@@ -142,8 +142,8 @@ cc.Class({
                     {
                         for(var j = 0; j < horizontalRoutes[i].length; j++)
                         {
-                            if( horizontalRoutes[i][j].x == currentWaterPosition.x &&
-                                horizontalRoutes[i][j].y == currentWaterPosition.y)
+                            if( horizontalRoutes[i][0].x == currentWaterPosition.x &&
+                                horizontalRoutes[i][0].y == currentWaterPosition.y)
                             {
                                 targetRoute = horizontalRoutes[i];
                             //    for(var k = j; k < horizontalRoutes[i].length - j; k++)
@@ -160,8 +160,8 @@ cc.Class({
                     {
                         for(var j = 0; j < verticalRoutes[i].length; j++)
                         {
-                            if( verticalRoutes[i][j].x == currentWaterPosition.x &&
-                                verticalRoutes[i][j].y == currentWaterPosition.y)
+                            if( verticalRoutes[i][verticalRoutes[i].length - 1].x == currentWaterPosition.x &&
+                                verticalRoutes[i][verticalRoutes[i].length - 1].y == currentWaterPosition.y)
                             {
                                 targetRoute = verticalRoutes[i].reverse();
                                 //for(var k = j; k >= 0; k--)
@@ -179,14 +179,10 @@ cc.Class({
                     {
                         for(var j = 0; j < horizontalRoutes[i].length; j++)
                         {
-                            if( horizontalRoutes[i][j].x == currentWaterPosition.x &&
-                                horizontalRoutes[i][j].y == currentWaterPosition.y)
+                            if( horizontalRoutes[i][horizontalRoutes[i].length - 1].x == currentWaterPosition.x &&
+                                horizontalRoutes[i][horizontalRoutes[i].length - 1].y == currentWaterPosition.y)
                             {
                                 targetRoute = horizontalRoutes[i].reverse();
-                                //for(var k = j; k >= 0; k--)
-                                //{
-                                //    targetRoute[j - k] = verticalRoutes[i][k];
-                                //}
                             }
                         }
                     }
@@ -201,55 +197,62 @@ cc.Class({
            timer = timer + dt;
            if(timer >= flowSpeed)
            {
-                waterTile.setScale(cc.Vec2.ONE);
-                cc.log("targetRouteStartPosition: " + targetRoute[0].x + " " + targetRoute[0].y );
-                var tilePosition = this.pathLayer.getPositionAt(targetRoute[0].x, targetRoute[0].y);
-                tilePosition.y -= this.node.height / 2;
-                tilePosition.x -= this.node.width / 2;
-                tilePosition.y += tileSize;
-                //spawn a new tile.
-                waterTile = cc.instantiate(this.lineGraphics.node);
-                waterTile.parent = this.node;
-                waterTile.setScale(0,0);
-                
-                switch(rotation)
-                {
-                    case 0:{
-                        waterTile.setPosition(tilePosition.x,tilePosition.y - routeTileCount * tileSize);
-                        waterScaleConstant = new cc.Vec2(1,0);
-                    }break;
-                    case 1:{ 
-                        waterTile.setPosition(tilePosition.x + routeTileCount * tileSize, tilePosition.y);
-                        waterScaleConstant = new cc.Vec2(0,1);
-                    }break;
-                    case 2:{
-                        waterTile.setPosition(tilePosition.x,tilePosition.y + routeTileCount * tileSize);
-                        waterScaleConstant = new cc.Vec2(1,0);
-                    }break;
-                    case 3:{
-                        waterTile.setPosition(tilePosition.x - routeTileCount * tileSize, tilePosition.y);
-                        waterScaleConstant = new cc.Vec2(0,1);
-                    }break;
-                }
                 timer = 0;
-                routeTileCount++;
-           }
-           waterTile.setScale(waterScaleConstant);
-          if(waterTile.scaleY == 0)
-           {
-                waterTile.scaleY = timer/flowSpeed;
-           }else
-           {
-                waterTile.scaleX = timer/flowSpeed;
-           }
-
-           if(routeTileCount == targetRoute.length + 1)
-           {
-                currentWaterPosition.x = targetRoute[targetRoute.length - 1].x;
-                currentWaterPosition.y = targetRoute[targetRoute.length - 1].y;
-                routeTileCount = 0;
-                lerp = false;
-           }
+                waterTile.setScale(cc.Vec2.ONE);
+                waterTile = cc.instantiate(this.lineGraphics.node);
+                if(routeTileCount == targetRoute.length)
+                {
+                    //currentWaterPosition.x = targetRoute[targetRoute.length - 1].x;
+                    //currentWaterPosition.y = targetRoute[targetRoute.length - 1].y;
+                    routeTileCount = 0;
+                    lerp = false;
+                }else
+                {
+                    cc.log("targetRouteStartPosition: " + targetRoute[0].x + " " + targetRoute[0].y );
+                    var tilePosition = this.pathLayer.getPositionAt(targetRoute[0].x, targetRoute[0].y);
+                    tilePosition.y -= this.node.height / 2;
+                    tilePosition.x -= this.node.width / 2;
+                    tilePosition.y += tileSize;
+                    //spawn a new tile.
+                    //waterTile = cc.instantiate(this.lineGraphics.node);
+                    waterTile.parent = this.node;
+                    waterTile.setScale(0,0);
+                    
+                    switch(rotation)
+                    {
+                        case 0:{
+                            waterTile.setPosition(tilePosition.x,tilePosition.y - routeTileCount * tileSize);
+                            waterScaleConstant = new cc.Vec2(1,0);
+                        }break;
+                        case 1:{ 
+                            waterTile.setPosition(tilePosition.x + routeTileCount * tileSize, tilePosition.y);
+                            waterScaleConstant = new cc.Vec2(0,1);
+                        }break;
+                        case 2:{
+                            waterTile.setPosition(tilePosition.x,tilePosition.y + (routeTileCount - 1) * tileSize);
+                            waterScaleConstant = new cc.Vec2(1,0);
+                            waterTile.anchorY = 0;
+                            }break;
+                        case 3:{
+                            waterTile.setPosition(tilePosition.x - (routeTileCount - 1) * tileSize - 1, tilePosition.y);
+                            waterScaleConstant = new cc.Vec2(0,1);
+                            waterTile.anchorX = 1;
+                        }break;
+                    }
+                    currentWaterPosition = new cc.Vec2(targetRoute[routeTileCount].x, targetRoute[routeTileCount].y);
+                    routeTileCount++;
+                }
+            }else
+            {
+                waterTile.setScale(waterScaleConstant);
+                if(waterTile.scaleY == 0)
+                {
+                        waterTile.scaleY = timer/flowSpeed;
+                }else
+                {
+                        waterTile.scaleX = timer/flowSpeed;
+                }
+            }
         }
     },
 
