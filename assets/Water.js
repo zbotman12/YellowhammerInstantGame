@@ -12,15 +12,17 @@ var goalPosition;
 var rotation = 0;
 
 var started = false;
-var timer = 0;
-var targetRoutes;
+var targetRoute;
 var routeTileCount = 0;
 var numTilesInRoute = 0;
-var flowSpeed = 2.0;
+var flowSpeed = 0.5;
+var timer = flowSpeed;
 var rotated = true;
 var tileSize = 64;
 var currentWaterPosition;
 var lerp = true;
+var waterTile;
+var waterScaleConstant;
 
 cc.Class({
     extends: cc.Component,
@@ -40,7 +42,7 @@ cc.Class({
         },
         lineGraphics: {
             default: null,
-            type: cc.Graphics,
+            type: cc.Sprite,
         },
     },
 
@@ -57,37 +59,50 @@ cc.Class({
         }
 
         this.findRoutes(startPosition);
+
+        //Sort Horizontal Routes left To right
         for(var i = 0; i < horizontalRoutes.length; i++)
         {
-            cc.log("HORIZONTAL ROUTE " + i + ": ");
             for(var j = 0; j < horizontalRoutes[i].length; j++)
             {
-                cc.log("    " + horizontalRoutes[i][j].x + " " + horizontalRoutes[i][j].y);
+                for(var k = j; k < horizontalRoutes[i].length; k++)
+                {
+                    if(horizontalRoutes[i][j].x > horizontalRoutes[i][k].x)
+                    {
+                        var temp =  horizontalRoutes[i][j];
+                        horizontalRoutes[i][j] = horizontalRoutes[i][k];
+                        horizontalRoutes[i][k] = temp;
+                    }
+                }
+                
             }
         }
 
+        //Sort Vertical Routes top to bottom
         for(var i = 0; i < verticalRoutes.length; i++)
         {
-            cc.log("VERTICAL ROUTE " + i + ": ");
             for(var j = 0; j < verticalRoutes[i].length; j++)
             {
-                cc.log("    " + verticalRoutes[i][j].x + " " + verticalRoutes[i][j].y);
+                for(var k = j; k < verticalRoutes[i].length; k++)
+                {
+                    if(verticalRoutes[i][j].y > verticalRoutes[i][k].y)
+                    {
+                        var temp =  verticalRoutes[i][j];
+                        verticalRoutes[i][j] = verticalRoutes[i][k];
+                        verticalRoutes[i][k] = temp;
+                    }
+                }
+                
             }
         }
-
-        //Need to sort vertical routes by the y value
-        //and horizontal routes by the x value.
-
-
         currentWaterPosition = startPosition;
+        waterTile = this.lineGraphics.node;
+
         started = true;
     },
 
     update(dt)
     {
-        cc.log("CALLING UPDATE");
-        timer = timer + dt;
-        cc.log("timer: " + timer);
         if(!started)
         {
             return;
@@ -96,8 +111,8 @@ cc.Class({
         //We rotated the puzzle
         if(rotated)
         {
-            targetRoutes = new Array();
-            var targetRouteCount = 0;
+            targetRoute = new Array();
+            cc.log("currentWaterPosition: " + currentWaterPosition.x + ", " + currentWaterPosition.y);
            switch(rotation)
             {
                 case 0:
@@ -110,32 +125,71 @@ cc.Class({
                             if( verticalRoutes[i][j].x == currentWaterPosition.x &&
                                 verticalRoutes[i][j].y == currentWaterPosition.y)
                             {
-                                var targetRoute = new Array();
-                                for(var k = j; k < verticalRoutes[i].length - j; k++)
-                                {
-                                    targetRoute[k-j] = verticalRoutes[i][k];
-                                }
-                                targetRoutes[targetRouteCount] = targetRoute;
-                                targetRouteCount++;
+                                targetRoute = verticalRoutes[i];
+                            //    for(var k = j; k < verticalRoutes[i].length - j; k++)
+                            //    {
+                            //        targetRoute[k-j] = verticalRoutes[i][k];
+                            //    }
                             }
                         }
                     }
                 }
                 break;
-                case 90:
+                case 1:
                 {
                     //Check if this tile is at the start of any horizontal routes
+                    for(var i = 0; i < horizontalRoutes.length; i++)
+                    {
+                        for(var j = 0; j < horizontalRoutes[i].length; j++)
+                        {
+                            if( horizontalRoutes[i][j].x == currentWaterPosition.x &&
+                                horizontalRoutes[i][j].y == currentWaterPosition.y)
+                            {
+                                targetRoute = horizontalRoutes[i];
+                            //    for(var k = j; k < horizontalRoutes[i].length - j; k++)
+                            //    {
+                            //        targetRoute[k-j] = horizontalRoutes[i][k];
+                            //    }
+                            }
+                        }
+                    }
+                }break;
+                case 2:
+                {
+                    for(var i = 0; i < verticalRoutes.length; i++)
+                    {
+                        for(var j = 0; j < verticalRoutes[i].length; j++)
+                        {
+                            if( verticalRoutes[i][j].x == currentWaterPosition.x &&
+                                verticalRoutes[i][j].y == currentWaterPosition.y)
+                            {
+                                targetRoute = verticalRoutes[i].reverse();
+                                //for(var k = j; k >= 0; k--)
+                                //{
+                                //    targetRoute[j - k] = verticalRoutes[i][k];
+                                //}
+                            }
+                        }
+                    }
 
                 }break;
-                case 180:
+                case 3:
                 {
-                    //Check if this tile is at the end of any horizontal routes
-
-                }break;
-                case 270:
-                {
-                    //Check if this tile is at the end of any vertical routes
-
+                    for(var i = 0; i < horizontalRoutes.length; i++)
+                    {
+                        for(var j = 0; j < horizontalRoutes[i].length; j++)
+                        {
+                            if( horizontalRoutes[i][j].x == currentWaterPosition.x &&
+                                horizontalRoutes[i][j].y == currentWaterPosition.y)
+                            {
+                                targetRoute = horizontalRoutes[i].reverse();
+                                //for(var k = j; k >= 0; k--)
+                                //{
+                                //    targetRoute[j - k] = verticalRoutes[i][k];
+                                //}
+                            }
+                        }
+                    }
                 }
             }
             rotated = false;
@@ -144,50 +198,59 @@ cc.Class({
 
         if(lerp)
         {
-        for(var i = 0; i < targetRoutes.length; i++)
-        {
-            cc.log("WE GOT HERE");
-            var startPos = this.pathLayer.getPositionAt(targetRoutes[0][0].x, targetRoutes[0][0].y);
-            cc.log("WE GOT HERE2");
-            //Everything is from the BOTTOM MIDDLE WHAT THE FUCK
-            startPos.y += tileSize;
-            startPos.y -= this.node.height / 2;
-            startPos.x -= this.node.width / 2;
-            cc.log("WE GOT HERE3");
-
-            this.lineGraphics.clear(false);
-            cc.log("WE GOT HERE4");
-            switch(rotation)
-            {
-                case 0:
+           timer = timer + dt;
+           if(timer >= flowSpeed)
+           {
+                waterTile.setScale(cc.Vec2.ONE);
+                cc.log("targetRouteStartPosition: " + targetRoute[0].x + " " + targetRoute[0].y );
+                var tilePosition = this.pathLayer.getPositionAt(targetRoute[0].x, targetRoute[0].y);
+                tilePosition.y -= this.node.height / 2;
+                tilePosition.x -= this.node.width / 2;
+                tilePosition.y += tileSize;
+                //spawn a new tile.
+                waterTile = cc.instantiate(this.lineGraphics.node);
+                waterTile.parent = this.node;
+                waterTile.setScale(0,0);
+                
+                switch(rotation)
                 {
-                    this.lineGraphics.roundRect(startPos.x, startPos.y, 64, -tileSize * 5 * (timer / flowSpeed), 0);
-               }break;
-                case 90:
-                {
-                    this.lineGraphics.roundRect(startPos.x, startPos.y, tileSize * targetRoutes[i].length * (timer / flowSpeed), 64, 0);
-                }break;
-                case 180:
-                {
-                    this.lineGraphics.roundRect(startPos.x, startPos.y, 64, tileSize * targetRoutes[i].length * (timer / flowSpeed), 0);
-                }break;
-                case 270:
-               {
-                    this.lineGraphics.roundRect(startPos.x, startPos.y, -tileSize * targetRoutes[i].length * (timer / flowSpeed), 64, 0);
+                    case 0:{
+                        waterTile.setPosition(tilePosition.x,tilePosition.y - routeTileCount * tileSize);
+                        waterScaleConstant = new cc.Vec2(1,0);
+                    }break;
+                    case 1:{ 
+                        waterTile.setPosition(tilePosition.x + routeTileCount * tileSize, tilePosition.y);
+                        waterScaleConstant = new cc.Vec2(0,1);
+                    }break;
+                    case 2:{
+                        waterTile.setPosition(tilePosition.x,tilePosition.y + routeTileCount * tileSize);
+                        waterScaleConstant = new cc.Vec2(1,0);
+                    }break;
+                    case 3:{
+                        waterTile.setPosition(tilePosition.x - routeTileCount * tileSize, tilePosition.y);
+                        waterScaleConstant = new cc.Vec2(0,1);
+                    }break;
                 }
-            }
+                timer = 0;
+                routeTileCount++;
+           }
+           waterTile.setScale(waterScaleConstant);
+          if(waterTile.scaleY == 0)
+           {
+                waterTile.scaleY = timer/flowSpeed;
+           }else
+           {
+                waterTile.scaleX = timer/flowSpeed;
+           }
 
-       }
-        this.lineGraphics.fill();
-        this.lineGraphics.stroke();
+           if(routeTileCount == targetRoute.length + 1)
+           {
+                currentWaterPosition.x = targetRoute[targetRoute.length - 1].x;
+                currentWaterPosition.y = targetRoute[targetRoute.length - 1].y;
+                routeTileCount = 0;
+                lerp = false;
+           }
         }
-
-        if(timer > flowSpeed)
-        {
-            timer = 0;
-            lerp = false;
-        }
-
     },
 
     findRoutes(routeStartPosition)
@@ -322,4 +385,30 @@ cc.Class({
             }
         }
     },
+
+    RotateLeft()
+    {
+        if(rotation == 0)
+        {
+            rotation = 3;
+        }else
+        {
+            rotation--;
+        }
+        cc.log(rotation);
+        rotated = true;
+    },
+
+    RotateRight()
+    {
+        if(rotation == 3)
+        {
+            rotation = 0;
+        }else
+        {
+            rotation++;
+        }
+        cc.log(rotation);
+        rotated = true;
+    }
 });
